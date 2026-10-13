@@ -1,9 +1,11 @@
+
 package com.jobconnect.backend.controller;
 
 import com.jobconnect.backend.model.Job;
 import com.jobconnect.backend.model.User;
 import com.jobconnect.backend.repository.JobRepository;
 import com.jobconnect.backend.repository.UserRepository;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,7 +14,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/jobs")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {
+    "http://localhost:5173",
+    "https://job-connect-frontend-pied.vercel.app"
+})
 public class JobController {
 
     private final JobRepository jobRepository;
@@ -21,7 +26,6 @@ public class JobController {
     public JobController(
             JobRepository jobRepository,
             UserRepository userRepository) {
-
         this.jobRepository = jobRepository;
         this.userRepository = userRepository;
     }
@@ -35,25 +39,19 @@ public class JobController {
     // GET JOB BY ID
     @GetMapping("/{id}")
     public ResponseEntity<?> getJobById(@PathVariable Long id) {
-
         return jobRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(
-                        ResponseEntity
-                                .status(HttpStatus.NOT_FOUND)
-                                .build()
-                );
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElseGet(() ->
+                        ResponseEntity.status(HttpStatus.NOT_FOUND)
+                                .body("Job not found"));
     }
 
     // CREATE JOB
     @PostMapping
     public ResponseEntity<?> createJob(@RequestBody Job job) {
-
         if (job.getRecruiter() == null ||
                 job.getRecruiter().getId() == null) {
-
-            return ResponseEntity
-                    .badRequest()
+            return ResponseEntity.badRequest()
                     .body("Recruiter ID is required");
         }
 
@@ -62,8 +60,7 @@ public class JobController {
                 .orElse(null);
 
         if (recruiter == null) {
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body("Recruiter not found");
         }
 
@@ -71,23 +68,19 @@ public class JobController {
 
         Job savedJob = jobRepository.save(job);
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
+        return ResponseEntity.status(HttpStatus.CREATED)
                 .body(savedJob);
     }
 
     // DELETE JOB
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteJob(@PathVariable Long id) {
-
         if (!jobRepository.existsById(id)) {
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body("Job not found");
         }
 
         jobRepository.deleteById(id);
-
         return ResponseEntity.ok("Job deleted successfully");
     }
 }
